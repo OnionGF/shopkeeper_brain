@@ -25,8 +25,11 @@ class RrfMergeNode(BaseNode):
         # 4、利用RRF 计算两路文档的分数（去重、排序先不管）
         merged_rrf_results: List[Tuple[Dict[str, Any], float]] = self._merge_rrf_docs(rrf_inputs, self.config.rrf_k, self.config.rrf_max_results)
 
+        # 获取对象
+        merged_rrf = [rrf_res for rrf_res, _ in merged_rrf_results]
+
         # 5、更新state
-        state['rrf_chunks '] = merged_rrf_results
+        state['rrf_chunks '] = merged_rrf
 
         return state
 

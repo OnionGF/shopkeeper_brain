@@ -58,7 +58,7 @@ class HybridVectorSearchNode(BaseNode):
                                         ranker_weights=[0.5, 0.5],
                                         norm_score=True,
                                         limit=5,
-                                        output_fields=["chunk_id","content","item_name"]
+                                        output_fields=["chunk_id","content","item_name","title"]
                                         )
             if not hybrid_search_res or not hybrid_search_res[0]:
                 return state
