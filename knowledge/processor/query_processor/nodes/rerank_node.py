@@ -34,6 +34,17 @@ class RerankerNode(BaseNode):
 
         # 3、利用Reranker进行精排
         refine_docs:List[Dict[str, Any]]= self._refine_rank(user_query, rerank_outputs)
+
+        # 4、top_k:返回指定条数的文档：
+        # 设置过大：1、LLM上下文过长 2、截取无关上下文，不该截取的截取到了
+        # 设置过小：1、LLM上下文过短 2、检索到的上下文信息不全面
+
+        reranked_docs = self._cliff_cutoff(refine_docs, self.config.rerank_min_top_k, self.config.rerank_max_top_k   )
+
+        state['reranked_docs'] = reranked_docs
+
+        return state
+
         
 
     def _collect_rerank_inputs(self, state: QueryGraphState) -> List[Dict[str, Any]]:
@@ -150,6 +161,59 @@ class RerankerNode(BaseNode):
         except Exception as e:
             self.logger.error(f"BGE-M3重排序模型计算分数失败 原因：{str(e)}")
             return [{**d, "score": None} for d in rerank_outputs]
+
+    def _cliff_cutoff(self, ranked_docs):
+        """
+        断崖检测截断（优化版）：
+          - 最大断崖检测（找到跌幅最大的位置）
+          - 绝对分数底线过滤（防止全部不相关但分数均匀）
+          - rel_gap 稳定性（仅在 |score| > 1.0 时启用）
+        """
+        if not ranked_docs:
+            return []
+
+        upper_bound = min(self.config.rerank_max_top_k, len(ranked_docs))
+        lower_bound = min(self.config.rerank_min_top_k, upper_bound)
+
+        # ===== 最大断崖检测 =====
+        max_gap = 0.0
+        cutoff_pos = upper_bound
+
+        for i in range(lower_bound - 1, upper_bound - 1):
+            current_score = ranked_docs[i].get("score")
+            next_score = ranked_docs[i + 1].get("score")
+
+            if current_score is None or next_score is None:
+                continue
+
+            abs_gap = current_score - next_score
+
+            # ===== rel_gap 稳定性 =====
+            should_cut = False
+            if abs_gap >= self.config.rerank_gap_abs:
+                should_cut = True
+            elif abs(current_score) > 1.0:  # 使用 abs()
+                rel_gap = abs_gap / (abs(current_score) + 1e-6)
+                if rel_gap >= self.config.rerank_gap_ratio:
+                    should_cut = True
+
+            # 选择跌幅最大的断崖位置
+            if should_cut and abs_gap > max_gap:
+                max_gap = abs_gap
+                cutoff_pos = i + 1
+
+        cutoff_docs = ranked_docs[:cutoff_pos]
+
+        # ===== 绝对分数底线过滤 =====
+        rerank_min_score = getattr(self.config, 'rerank_min_score', None)
+        if rerank_min_score is not None:
+            filtered_docs = [d for d in cutoff_docs if (d.get("score") or 0) >= rerank_min_score]
+            if len(filtered_docs) < lower_bound:
+                cutoff_docs = ranked_docs[:lower_bound]
+            else:
+                cutoff_docs = filtered_docs
+
+        return cutoff_docs
 
 
 if __name__ == "__main__":
