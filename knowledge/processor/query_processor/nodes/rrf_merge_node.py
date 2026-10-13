@@ -125,7 +125,7 @@ if __name__ == "__main__":
         ],
         "hyde_embedding_chunks": [
             {"entity": {"chunk_id": "chunk_2", "content": "HyDE搜索结果#1"}},
-            {"entity": {"chunk_id": "chunk_1", "co ntent": "HyDE搜索结果#2"}},
+            {"entity": {"chunk_id": "chunk_1", "content": "HyDE搜索结果#2"}},
             {"entity": {"chunk_id": "chunk_4", "content": "HyDE搜索结果#3"}},
         ],
     }
