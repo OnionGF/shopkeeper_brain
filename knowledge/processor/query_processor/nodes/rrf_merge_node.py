@@ -108,4 +108,35 @@ class RrfMergeNode(BaseNode):
 
         return search_results
 
+if __name__ == "__main__":
+    print("=" * 60)
+    print("开始测试: RRF 融合节点")
+    print("=" * 60)
+
+    # 模拟两路检索结果
+    # chunk_1 命中 2 路（预期最高分）
+    # chunk_2 命中 2 路
+    # chunk_3, chunk_4 各命中 1 路
+    mock_state = {
+        "embedding_chunks": [
+            {"entity": {"chunk_id": "chunk_1", "content": "向量搜索结果#1"}},
+            {"entity": {"chunk_id": "chunk_2", "content": "向量搜索结果#2"}},
+            {"entity": {"chunk_id": "chunk_3", "content": "向量搜索结果#3"}},
+        ],
+        "hyde_embedding_chunks": [
+            {"entity": {"chunk_id": "chunk_2", "content": "HyDE搜索结果#1"}},
+            {"entity": {"chunk_id": "chunk_1", "co ntent": "HyDE搜索结果#2"}},
+            {"entity": {"chunk_id": "chunk_4", "content": "HyDE搜索结果#3"}},
+        ],
+    }
+
+    print("【输入状态】:")
+    print(f"  embedding_chunks: {len(mock_state['embedding_chunks'])} 条")
+    print(f"  hyde_embedding_chunks: {len(mock_state['hyde_embedding_chunks'])} 条")
+    print("-" * 60)
+
+    rrf_node = RrfMergeNode()
+    result = rrf_node.process(mock_state)
+
+
  
