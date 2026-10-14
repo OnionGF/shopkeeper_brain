@@ -409,7 +409,11 @@ class ItemNameConfirmedNode(BaseNode):
 
         # 5、决策
         self._decide(confirmed, options, state, rewritten_query, item_names)
-        
+
+        # 6、更新state
+        state['history'] = history_context
+
+        # 7、返回state
         return state
 
     def _decide(self, confirmed: List[str], options: List[str], state: QueryGraphState, rewritten_query: str, item_names:List[str]):

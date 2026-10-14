@@ -26,10 +26,8 @@ class WebMcpSearchNode(BaseNode):
         if not web_search_results:
             return state
 
-        # 4更新state
-        state['web_search_docs'] = web_search_results
-
-        return  state
+        # 4. 返回
+        return {"web_search_docs": web_search_results}
 
     def _validate_state(self, state: QueryGraphState) -> Tuple[str, List[str]]:
 

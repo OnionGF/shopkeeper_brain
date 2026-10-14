@@ -8,12 +8,12 @@ from langgraph.graph.state import CompiledStateGraph
 from dotenv import load_dotenv
 from knowledge.processor.query_processor.state import QueryGraphState
 from knowledge.processor.query_processor.nodes.item_name_confirmed_node import ItemNameConfirmedNode
-from knowledge.processor.query_processor.nodes.hybrid_vector_search_node import HybridVectorSearch
-from knowledge.processor.query_processor.nodes.hyde_vector_search_node import HyDeVectorSearchNode
+from knowledge.processor.query_processor.nodes.hybrid_vector_search_node import HybridVectorSearchNode
+from knowledge.processor.query_processor.nodes.hyde_vector_search_node import HydeVectorSearchNode
 from knowledge.processor.query_processor.nodes.web_mcp_search_node import WebMcpSearchNode
 from knowledge.processor.query_processor.nodes.rrf_merge_node import RrfMergeNode
-from knowledge.processor.query_processor.nodes.reranker_node import RerankerNode
-from knowledge.processor.query_processor.nodes.answer_output_node import AnswerOutPutNode
+from knowledge.processor.query_processor.nodes.rerank_node import RerankerNode
+from knowledge.processor.query_processor.nodes.answer_output_node import AnswerOutputNode
 
 # 加载环境变量
 load_dotenv()
@@ -82,13 +82,13 @@ def create_query_graph() -> CompiledStateGraph:
     nodes = {
         "item_name_confirmed_node": ItemNameConfirmedNode(),
         "multi_search": lambda x: x,  # 虚拟节点
-        "hybrid_vector_search_node": HybridVectorSearch(),
-        "hyde_vector_search_node": HyDeVectorSearchNode(),
+        "hybrid_vector_search_node": HybridVectorSearchNode(),
+        "hyde_vector_search_node": HydeVectorSearchNode(),
         "web_mcp_search_node": WebMcpSearchNode(),
         "join": lambda x: {},  # 多路搜索汇合（虚节点）
         "rrf_merge_node": RrfMergeNode(),
         "reranker_node": RerankerNode(),
-        "answer_output_node": AnswerOutPutNode(),
+        "answer_output_node": AnswerOutputNode(),
     }
 
     # 3. 添加节点
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     print("-" * 60)
 
     mock_state_1 = {
-        "original_query": "RS-12 数字万用表如何测量直流电压？",
+        "original_query": "RS PRO RS-12 数字万用表如何测量直流电压？",
         "session_id": "test_session_main_graph",
         "task_id": "test_task_001",
         "is_stream": False,

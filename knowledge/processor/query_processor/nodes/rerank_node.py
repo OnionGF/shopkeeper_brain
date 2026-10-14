@@ -162,56 +162,37 @@ class RerankerNode(BaseNode):
             self.logger.error(f"BGE-M3重排序模型计算分数失败 原因：{str(e)}")
             return [{**d, "score": None} for d in rerank_outputs]
 
-    def _cliff_cutoff(self, ranked_docs):
+    def _cliff_cutoff(self, refine_docs: List[Dict[str, Any]], rerank_min_top_k: int, rerank_max_top_k: int) -> List[
+        Dict[str, Any]]:
         """
-        断崖检测截断（优化版）：
-          - 最大断崖检测（找到跌幅最大的位置）
-          - 绝对分数底线过滤（防止全部不相关但分数均匀）
-          - rel_gap 稳定性（仅在 |score| > 1.0 时启用）
+          动态top_k: 归一化后只需一个断崖阈值(rerank_gap_threshold)
+          从头开始寻找最大断崖点，再用 min_top_k 兜底
         """
-        if not ranked_docs:
-            return []
 
-        upper_bound = min(self.config.rerank_max_top_k, len(ranked_docs))
-        lower_bound = min(self.config.rerank_min_top_k, upper_bound)
+        upper_bound = min(rerank_max_top_k, len(refine_docs))
+        lower_bound = min(rerank_min_top_k, upper_bound)
+        cut_off = upper_bound
+        max_gap = 0
 
-        # ===== 最大断崖检测 =====
-        max_gap = 0.0
-        cutoff_pos = upper_bound
-
-        for i in range(lower_bound - 1, upper_bound - 1):
-            current_score = ranked_docs[i].get("score")
-            next_score = ranked_docs[i + 1].get("score")
+        # 从第0个间隔开始遍历，找全局最大断崖
+        for i in range(0, upper_bound - 1):
+            current_score = refine_docs[i].get('score')
+            next_score = refine_docs[i + 1].get('score')
 
             if current_score is None or next_score is None:
                 continue
 
-            abs_gap = current_score - next_score
+            gap = current_score - next_score
 
-            # ===== rel_gap 稳定性 =====
-            should_cut = False
-            if abs_gap >= self.config.rerank_gap_abs:
-                should_cut = True
-            elif abs(current_score) > 1.0:  # 使用 abs()
-                rel_gap = abs_gap / (abs(current_score) + 1e-6)
-                if rel_gap >= self.config.rerank_gap_ratio:
-                    should_cut = True
+            if gap >= 0.15 and gap > max_gap:
+                max_gap = gap
+                cut_off = i + 1
+                self.logger.info(f"位置{i + 1}发生断崖")
 
-            # 选择跌幅最大的断崖位置
-            if should_cut and abs_gap > max_gap:
-                max_gap = abs_gap
-                cutoff_pos = i + 1
+        # 兜底：不管断崖在哪，至少保留 lower_bound 个
+        cut_off = max(cut_off, lower_bound)
 
-        cutoff_docs = ranked_docs[:cutoff_pos]
-
-        # ===== 绝对分数底线过滤 =====
-        rerank_min_score = getattr(self.config, 'rerank_min_score', None)
-        if rerank_min_score is not None:
-            filtered_docs = [d for d in cutoff_docs if (d.get("score") or 0) >= rerank_min_score]
-            if len(filtered_docs) < lower_bound:
-                cutoff_docs = ranked_docs[:lower_bound]
-            else:
-                cutoff_docs = filtered_docs
+        cutoff_docs = refine_docs[:cut_off]
 
         return cutoff_docs
 
@@ -245,4 +226,3 @@ if __name__ == "__main__":
 
     node = RerankerNode()
     result = node.process(mock_state)
-    print(result)

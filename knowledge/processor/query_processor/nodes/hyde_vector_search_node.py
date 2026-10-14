@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union, Dict, Any
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -16,7 +16,7 @@ class HydeVectorSearchNode(BaseNode):
 
     name = "hyde_vector_search_node"
 
-    def process(self, state: QueryGraphState) -> QueryGraphState:
+    def process(self, state: QueryGraphState) -> Union[QueryGraphState, Dict[str, Any]]:
 
         # 1、参数校验
         rewritten_query, item_names = self._validate_state(state)
@@ -74,10 +74,8 @@ class HydeVectorSearchNode(BaseNode):
             if not hybrid_search_res or not hybrid_search_res[0]:
                 return state
 
-            # 7.2 更新state
-            state['hyde_embedding_chunks'] = hybrid_search_res[0]
-
-            return state
+            # 7.3 修改自己的并且返回修改后的
+            return {"hyde_embedding_chunks": hybrid_search_res[0]}
 
         except Exception as e:
             self.logger.error(f"假设性文档{hy_document}嵌入失败 error: {e}")

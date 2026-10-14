@@ -148,7 +148,8 @@ def main():
     print("Milvus 三种向量检索演示")
     print("=" * 50)
 
-    client = MilvusClient(uri="http://192.168.97.5:19530")
+    # 与 .env 的 MILVUS_URL 保持一致；勿用 standalone.milvus.orb.local（pymilvus/gRPC 常失败）
+    client = MilvusClient(uri="http://127.0.0.1:19530")
     embedding_model = AIClients.get_bge_m3_client()
 
     create_collection(client)

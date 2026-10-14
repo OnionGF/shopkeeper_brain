@@ -1,4 +1,4 @@
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Dict, Any, Union
 
 from knowledge.processor.query_processor.base import BaseNode
 from knowledge.processor.query_processor.exceptions import StateFieldError
@@ -13,7 +13,7 @@ class HybridVectorSearchNode(BaseNode):
 
     name = 'hybrid_vector_search_node'
 
-    def process(self, state: QueryGraphState) -> QueryGraphState:
+    def process(self, state: QueryGraphState) -> Union[QueryGraphState,Dict[str,Any]]:
 
         # 1、参数校验
         rewritten_query, item_names = self._validate_state(state)
@@ -64,9 +64,7 @@ class HybridVectorSearchNode(BaseNode):
                 return state
 
             # 4.4 更新state
-            state['embedding_chunks'] = hybrid_search_res[0]
-
-            return state
+            return {"embedding_chunks": hybrid_search_res[0]}
 
         except Exception as e:
             self.logger.error(f"用户问题{rewritten_query}嵌入失败 error: {e}")
