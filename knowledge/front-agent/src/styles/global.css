@@ -1,0 +1,59 @@
+:root {
+  --bg: #f3f5f8;
+  --bg-warm: #eef2f7;
+  --sidebar: #e8edf3;
+  --surface: #ffffff;
+  --ink: #1a2332;
+  --muted: #6b7a90;
+  --line: rgba(26, 35, 50, 0.08);
+  --accent: #1f6feb;
+  --accent-soft: rgba(31, 111, 235, 0.12);
+  --user-bubble: #1f6feb;
+  --tool-bg: #f0f4fa;
+  --shadow: 0 12px 40px rgba(26, 35, 50, 0.08);
+  --radius: 18px;
+  --font-display: 'Manrope', 'Noto Sans SC', sans-serif;
+  --font-body: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(900px 520px at 12% -10%, rgba(31, 111, 235, 0.1), transparent 55%),
+    radial-gradient(700px 400px at 88% 8%, rgba(20, 160, 133, 0.08), transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-warm) 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 122, 144, 0.35);
+  border-radius: 999px;
+}
