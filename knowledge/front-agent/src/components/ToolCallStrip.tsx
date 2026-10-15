@@ -26,14 +26,14 @@ export function ToolCallStrip({ tools, defaultOpen = true }: Props) {
     >
       <summary className={styles.summary}>
         <span className={`${styles.dot} ${running ? styles.dotRunning : ''}`} />
-        工具调用 · 已完成 {done}/{tools.length}
+        思考过程 · {done}/{tools.length}
         {running ? ' · 进行中' : ''}
       </summary>
       <ul className={styles.list}>
         {tools.map((t) => (
           <li key={t.id} className={styles.row}>
             <span className={styles.badge}>{t.name}</span>
-            <span>{t.displayName}</span>
+            <span className={styles.label}>{t.displayName}</span>
             <span className={styles.status}>{t.status === 'running' ? '运行中' : '完成'}</span>
           </li>
         ))}
