@@ -63,6 +63,9 @@ def save_chat_message(
 
 
 def get_recent_messages(session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    """
+    取最近 limit 条消息，返回时间正序（旧 → 新），供聊天区渲染与 LLM 上下文使用。
+    """
     try:
         cursor = (
             _get_collection()
@@ -70,7 +73,8 @@ def get_recent_messages(session_id: str, limit: int = 10) -> List[Dict[str, Any]
             .sort("ts", DESCENDING)
             .limit(limit)
         )
-        return list(cursor)
+        # 先倒序截取最近 N 条，再反转为正序，避免刷新后新问答跑到最上面
+        return list(reversed(list(cursor)))
     except Exception as e:
         logger.error(f"Error getting recent messages: {e}")
         return []

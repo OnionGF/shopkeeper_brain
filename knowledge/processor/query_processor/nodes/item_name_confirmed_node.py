@@ -305,17 +305,24 @@ class _ItemNameAligner:
                             if picked not in options and picked not in confirmed:
                                 options.append(picked)
 
-            # 不是高置信度, 有可能是中等置信，也有可能不是中等置信
+            # 不是高置信度：落入中置信区间则进 options（品类问法常见）
             else:
                 mid = [m for m in item_name_matches_sorted if
-                      m['score'] >= self._config.item_name_high_confidence
-                      and m.get('item_name') not in options
-                      and m.get('item_name') not in confirmed]
+                       m['score'] >= self._config.item_name_mid_confidence
+                       and m.get('item_name') not in options
+                       and m.get('item_name') not in confirmed]
                 if mid:
                     for m in mid[:self._config.item_name_max_options]:
-                        options.append(m.get('item_name')) # 一次循环内部只留三个可选的
+                        picked = m.get('item_name')
+                        # 同一次检索可能命中库内重复的同名记录，必须再去重
+                        if picked and picked not in options and picked not in confirmed:
+                            options.append(picked)
 
-        return confirmed, options[:self._config.item_name_max_options] # 最终只留三个可选的商品名给前端
+        # 跨 extracted_name / 库内重复记录再做一次保序去重
+        # 注意：不再做低于 mid 的 soft 兜底，否则天气等无关问题也会被弱匹配到库内商品
+        options = list(dict.fromkeys(options))
+        confirmed = list(dict.fromkeys(confirmed))
+        return confirmed, options[:self._config.item_name_max_options]
 
     def _item_name_score_filter(self, confirmed: List[str], search_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # 1. 构建 商品名 → 最高分数 的映射
@@ -401,7 +408,7 @@ class ItemNameConfirmedNode(BaseNode):
         item_names = llm_result.get("item_names")
         rewritten_query = llm_result.get("rewritten_query")
 
-        # 4、根据item_names做判断
+        # 4、仅当 LLM 抽到商品相关词才对齐；无关问题（天气/闲聊）不拿整句去向量库硬匹配
         if item_names:
             confirmed, options = self._aligner.search_and_align(item_names)
         else:
@@ -430,16 +437,24 @@ class ItemNameConfirmedNode(BaseNode):
 
         """
 
+        # 单一中置信候选 + 本轮确实抽到了商品相关词：品类问法可直接放行
+        if not confirmed and len(options) == 1 and item_names:
+            confirmed = [options[0]]
+            options = []
+
         if confirmed:
             state['item_names'] = confirmed
-            state['rewritten_query'] = rewritten_query
+            state['rewritten_query'] = rewritten_query or state.get('original_query', '')
         elif options:
             state['answer'] = (
-                f"我不确定您指的是哪款产品"
+                f"我不确定您指的是哪款产品。"
                 f"您是在询问以下产品吗：{'、'.join(options)}？"
             )
         else:
-            state['answer'] = "抱歉，我无法识别您询问的具体产品名称，请提供更准确的产品名称或型号。"
+            state['answer'] = (
+                "抱歉，我无法将您的问题关联到知识库中的具体产品。"
+                "请提供产品名称或型号后再试，例如：RS-12 数字万用表如何测量电压。"
+            )
 
 
 
