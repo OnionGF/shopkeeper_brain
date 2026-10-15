@@ -2,15 +2,11 @@
 导入相关路由。可由 main.py 统一挂载，也可本文件单独启动（兼容旧用法）。
 """
 
-import os
-
 import uvicorn
 from fastapi import BackgroundTasks, Depends, FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from knowledge.core.deps import get_upload_file_service
-from knowledge.core.paths import get_front_page_dir
 from knowledge.schema.upload_schema import TaskStatusResponse, UploadResponse
 from knowledge.service.upload_service import UpLoadService
 from knowledge.utils.task_util import get_task_info
@@ -51,11 +47,6 @@ def create_app() -> FastAPI:
         return {"flag": "success"}
 
     register_import_routes(app)
-
-    page_dir = get_front_page_dir()
-    if page_dir and os.path.exists(page_dir):
-        app.mount("/front", StaticFiles(directory=page_dir))
-
     return app
 
 

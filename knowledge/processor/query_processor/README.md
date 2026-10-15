@@ -322,7 +322,7 @@ progress：所有节点基类；delta/final：只有答案节点。final 表示�
 | `utils/sse_util.py` | SSE 队列与 generator |
 | `utils/task_util.py` | 任务进度/状态/结果容器 |
 | `shcemal/query_service.py` | 跑图与取结果服务 |
-| `front/chat.html` | EventSource 消费 progress/delta/final |
+| `front-agent/` | React 前端：EventSource 消费 progress/delta/final |
 
 ---
 

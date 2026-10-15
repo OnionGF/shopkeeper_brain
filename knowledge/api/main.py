@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from knowledge.api.import_router import register_import_routes
 from knowledge.api.query_router import register_query_routes
-from knowledge.core.paths import get_front_agent_dist_dir, get_front_page_dir
+from knowledge.core.paths import get_front_agent_dist_dir
 
 
 def create_app() -> FastAPI:
@@ -37,11 +37,6 @@ def create_app() -> FastAPI:
     # 业务路由分流（路径本身无冲突：/upload|/status vs /query|/stream|/history）
     register_import_routes(app)
     register_query_routes(app)
-
-    # 静态资源只挂一次
-    page_dir = get_front_page_dir()
-    if page_dir and os.path.exists(page_dir):
-        app.mount("/front", StaticFiles(directory=page_dir), name="front")
 
     agent_dir = get_front_agent_dist_dir()
     if agent_dir and os.path.exists(agent_dir):

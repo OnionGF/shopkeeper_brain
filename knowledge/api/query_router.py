@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from knowledge.core.deps import get_query_service
-from knowledge.core.paths import get_front_agent_dist_dir, get_front_page_dir
+from knowledge.core.paths import get_front_agent_dist_dir
 from knowledge.schema.query_schema import QueryRequest, QueryResponse, StreamSubmitResponse
 from knowledge.service.query_service import QueryService
 from knowledge.utils.sse_util import create_sse_queue, sse_generator
@@ -104,10 +104,6 @@ def create_app() -> FastAPI:
         return {"flag": "success"}
 
     register_query_routes(app)
-
-    page_dir = get_front_page_dir()
-    if page_dir and os.path.exists(page_dir):
-        app.mount("/front", StaticFiles(directory=page_dir))
 
     agent_dir = get_front_agent_dist_dir()
     if agent_dir and os.path.exists(agent_dir):

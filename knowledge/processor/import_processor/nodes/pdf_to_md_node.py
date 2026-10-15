@@ -120,8 +120,8 @@ if __name__ == '__main__':
 
     # 2、构建一个状态
     init_state = {
-        "import_file_path": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
-        "file_dir": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir",
+        "import_file_path": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
+        "file_dir": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir",
     }
     # 3、直接调用process
     result = pdf_to_md_node.process(init_state)

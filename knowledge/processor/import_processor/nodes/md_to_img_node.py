@@ -588,7 +588,7 @@ if __name__ == "__main__":
     setup_logging()
     md_img_node = MarkDownToImgNode()
     init_state = {
-        "md_path": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.md"
+        "md_path": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.md"
     }
     md_img_node.process(init_state)
 

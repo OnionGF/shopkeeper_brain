@@ -99,8 +99,8 @@ def run_import_graph():
 
     # 1、定义运行graph流程的状态
     graph_state = {
-        "import_file_path": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
-        "file_dir": "/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir"
+        "import_file_path": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
+        "file_dir": "/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir"
     }
     # stream: 迭代整个graph图状态可以得到每一个节点是事件(节点的名字以及节点操作完state之后的新状态)
     for event in import_app.stream(graph_state):

@@ -24,7 +24,6 @@ PYTHONPATH=. knowledge/.venv/bin/python -m knowledge.api.main
 | `GET /stream/{task_id}` | SSE 流式回答 |
 | `GET/DELETE /history/{session_id}` | 会话历史 |
 | `/agent` | React 前端构建产物（需先 `npm run build`） |
-| `/front` | 旧版静态页（`import.html` / `chat.html`） |
 
 依赖：Milvus、MongoDB、MinIO 等按本地环境配置；Python 依赖见 `knowledge/requirements.txt`，虚拟环境建议使用 `knowledge/.venv`。
 
@@ -66,7 +65,7 @@ npm run build
 ## 目录速览
 
 ```text
-agent_brain/
+shopkeeper_brain/
 ├── README.md                 ← 本文件
 ├── knowledge/
 │   ├── api/
@@ -74,7 +73,6 @@ agent_brain/
 │   │   ├── import_router.py  ← 导入路由（可被 main 挂载）
 │   │   └── query_router.py   ← 查询路由（可被 main 挂载）
 │   ├── front-agent/          ← Agent Brain React 前端
-│   ├── front/                ← 旧版 HTML 页
 │   ├── processor/            ← 导入 / 查询 LangGraph 流水线
 │   ├── service/              ← 业务服务
 │   └── schema/               ← 请求/响应模型

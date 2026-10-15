@@ -28,6 +28,6 @@ Vite 把 `/query`、`/stream`、`/history`、`/upload`、`/status` 代理到 `ht
 npm run build
 ```
 
-产物在 `dist/`，由统一入口挂载到 `/agent`。旧版 `knowledge/front/*.html` 仍在 `/front`。
+产物在 `dist/`，由统一入口挂载到 `/agent`。
 
 可选环境变量：`VITE_API_BASE`（默认空，同源相对路径）。
