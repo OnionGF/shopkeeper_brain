@@ -1,12 +1,12 @@
 import os
 
-# 项目根目录（.当前目录 ..上一层目录）D:\develop\develop\workspace\pycharm\251020\shopkeeper_brain\knowledge
+# 项目根目录（.当前目录 ..上一层目录）D:\develop\develop\workspace\pycharm\251020\agent_brain\knowledge
 KNOWLEDGE_ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # 本地文件存储基础目录
 LOCAL_BASE_DIR = os.path.join(KNOWLEDGE_ROOT, "temp_data")
 
-# 前端页面静态资源目录   D:\develop\develop\workspace\pycharm\251020\shopkeeper_brain\knowledge\front
+# 前端页面静态资源目录   D:\develop\develop\workspace\pycharm\251020\agent_brain\knowledge\front
 FRONT_PAGE_DIR = os.path.join(KNOWLEDGE_ROOT, "front")
 
 # Agent 豆包式 React 前端构建产物

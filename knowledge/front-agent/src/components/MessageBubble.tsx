@@ -1,4 +1,5 @@
 import { parseAnswerAndImages } from '../lib/answerParse'
+import { Markdown } from '../lib/markdown'
 import type { ChatMessage } from '../types'
 import { ToolCallStrip } from './ToolCallStrip'
 import styles from './MessageBubble.module.css'
@@ -27,10 +28,11 @@ export function MessageBubble({ message }: Props) {
   return (
     <div className={`${styles.row} ${isUser ? styles.rowUser : ''}`}>
       <div className={`${styles.avatar} ${!isUser ? styles.avatarBot : ''}`}>
-        {isUser ? '我' : '问器'}
+        {isUser ? '我' : 'A'}
       </div>
       <div className={styles.body}>
-        <div className={styles.bubble}>
+        {!isUser && <div className={styles.agentTag}>Agent Brain</div>}
+        <div className={`${styles.bubble} ${!isUser ? styles.bubbleBot : ''}`}>
           {!isUser && message.tools && message.tools.length > 0 && (
             <ToolCallStrip
               tools={message.tools}
@@ -45,7 +47,13 @@ export function MessageBubble({ message }: Props) {
             </span>
           ) : (
             <>
-              {text.trim() ? <div>{text}</div> : null}
+              {text.trim() ? (
+                isUser ? (
+                  <div>{text}</div>
+                ) : (
+                  <Markdown source={text} className={styles.answer} />
+                )
+              ) : null}
               {images.length > 0 && (
                 <div className={styles.images}>
                   {images.map((url) => (

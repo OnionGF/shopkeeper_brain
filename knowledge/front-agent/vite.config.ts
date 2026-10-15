@@ -8,10 +8,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 5173,
     proxy: {
-      '/query': { target: 'http://127.0.0.1:8001', changeOrigin: true },
-      '/stream': { target: 'http://127.0.0.1:8001', changeOrigin: true },
-      '/history': { target: 'http://127.0.0.1:8001', changeOrigin: true },
-      '/status': { target: 'http://127.0.0.1:8001', changeOrigin: true },
+      // 统一入口 knowledge.api.main → :8000
+      '/query': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/stream': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/history': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/status': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/upload': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
   build: {

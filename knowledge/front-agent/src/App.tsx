@@ -1,51 +1,15 @@
-import { useState } from 'react'
-import { ChatView } from './components/ChatView'
-import { Composer } from './components/Composer'
-import { Sidebar } from './components/Sidebar'
-import { useChatSession } from './hooks/useChatSession'
-import styles from './App.module.css'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { ChatPage } from './pages/ChatPage'
+import { ImportPage } from './pages/ImportPage'
 
 export default function App() {
-  const {
-    sessions,
-    sessionId,
-    messages,
-    sending,
-    send,
-    switchSession,
-    newSession,
-    clearCurrent,
-    deleteSession,
-  } = useChatSession()
-
-  const [seed, setSeed] = useState('')
-
   return (
-    <div className={styles.app}>
-      <Sidebar
-        sessions={sessions}
-        activeId={sessionId}
-        onNew={newSession}
-        onSelect={switchSession}
-        onDelete={deleteSession}
-        onClear={() => void clearCurrent()}
-      />
-      <div className={styles.column}>
-        <ChatView
-          messages={messages}
-          onHint={(text) => {
-            setSeed(text)
-          }}
-        />
-        <Composer
-          disabled={sending}
-          seed={seed}
-          onSend={(text) => {
-            setSeed('')
-            void send(text)
-          }}
-        />
-      </div>
-    </div>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<ChatPage />} />
+        <Route path="/import" element={<ImportPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
   )
 }

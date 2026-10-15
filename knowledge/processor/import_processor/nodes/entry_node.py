@@ -63,8 +63,8 @@ if __name__ == '__main__':
     entry_node = EntryNode()
 
     init_state = {
-        "import_file_path": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
-        "file_dir": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir",
+        "import_file_path": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir/万用表的使用.pdf",
+        "file_dir": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir",
     }
 
     result = entry_node.process(init_state)

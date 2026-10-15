@@ -1,16 +1,21 @@
 .wrap {
+  flex-shrink: 0;
   padding: 8px 28px 22px;
   animation: slideUp 0.4s ease both;
+  background: linear-gradient(180deg, transparent, rgba(7, 11, 20, 0.85) 40%);
 }
 
 .shell {
-  max-width: 880px;
+  max-width: 900px;
   margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: rgba(16, 26, 42, 0.82);
+  border: 1px solid rgba(120, 170, 255, 0.18);
   border-radius: 22px;
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   padding: 12px 14px 10px;
+  backdrop-filter: blur(16px);
 }
 
 .chips {
@@ -22,12 +27,14 @@
 
 .chip {
   font-size: 11px;
-  color: var(--muted);
-  border: 1px solid var(--line);
-  background: #f7f9fc;
+  color: var(--accent);
+  border: 1px solid rgba(47, 212, 200, 0.28);
+  background: rgba(47, 212, 200, 0.1);
   border-radius: 999px;
   padding: 4px 10px;
   pointer-events: none;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
 }
 
 .row {
@@ -51,7 +58,7 @@
 }
 
 .input::placeholder {
-  color: #9aa8bc;
+  color: #6f819a;
 }
 
 .send {
@@ -59,11 +66,11 @@
   height: 44px;
   border: none;
   border-radius: 14px;
-  color: #fff;
+  color: #061018;
   font-weight: 700;
   font-family: var(--font-display);
-  background: linear-gradient(135deg, #1f6feb, #148a78);
-  box-shadow: 0 8px 18px rgba(31, 111, 235, 0.28);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 10px 22px rgba(47, 212, 200, 0.28);
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
@@ -77,7 +84,7 @@
 }
 
 .hint {
-  max-width: 880px;
+  max-width: 900px;
   margin: 8px auto 0;
   font-size: 12px;
   color: var(--muted);
@@ -89,7 +96,7 @@
   border: 1px solid var(--line);
   padding: 1px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 @keyframes slideUp {

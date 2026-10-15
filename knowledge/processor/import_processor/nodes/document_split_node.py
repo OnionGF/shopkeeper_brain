@@ -321,13 +321,13 @@ class DocumentSplitNode(BaseNode):
 if __name__ == '__main__':
     document_split_node = DocumentSplitNode()
 
-    md_path = r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir/万用表的使用_new.md"
+    md_path = r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir/万用表的使用_new.md"
     with open(md_path, "r", encoding="utf-8") as f:
         md_content = f.read()
 
     init_state = {
         "file_title": "万用表的使用",
         "md_content": md_content,
-        "file_dir": r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir"
+        "file_dir": r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir"
     }
     document_split_node.process(init_state)

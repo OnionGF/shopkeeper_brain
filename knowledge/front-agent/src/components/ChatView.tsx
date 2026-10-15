@@ -27,9 +27,9 @@ export function ChatView({ messages, onHint }: Props) {
       <div className={styles.scroll}>
         {empty ? (
           <div className={styles.welcome}>
-            <h1 className={styles.heroBrand}>问器</h1>
+            <h1 className={styles.heroBrand}>Agent Brain</h1>
             <p className={styles.heroLead}>
-              有问题尽管问。我会检索知识库与联网信息，并把每一步工具调用展示给你。
+              多工具协同的知识库问答。检索、联网、重排都会以工具调用的形式呈现。
             </p>
             <div className={styles.hints}>
               {HINTS.map((h) => (

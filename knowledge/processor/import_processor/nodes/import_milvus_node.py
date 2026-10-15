@@ -187,7 +187,7 @@ def _cli_main() -> None:
     from pathlib import Path
     setup_logging()
 
-    temp_dir = Path(r"/Users/mac/Developer/Rag/shopkeeper_brain/knowledge/processor/import_processor/temp_dir")
+    temp_dir = Path(r"/Users/mac/Developer/Rag/agent_brain/knowledge/processor/import_processor/temp_dir")
     input_path = temp_dir / "chunks_vector.json"
     output_path = temp_dir / "chunks_vector_ids.json"
 

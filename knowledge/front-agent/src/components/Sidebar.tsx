@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { SessionMeta } from '../types'
 import styles from './Sidebar.module.css'
 
@@ -16,10 +17,17 @@ export function Sidebar({ sessions, activeId, onNew, onSelect, onDelete, onClear
       <div className={styles.brand}>
         <div className={styles.logo} aria-hidden />
         <div className={styles.brandText}>
-          <div className={styles.brandName}>问器</div>
-          <div className={styles.brandSub}>知识库问答</div>
+          <div className={styles.brandName}>Agent Brain</div>
+          <div className={styles.brandSub}>Tool · RAG · Web</div>
         </div>
       </div>
+
+      <Link className={styles.navImport} to="/import">
+        <span className={styles.newFull}>知识库导入</span>
+        <span className={styles.newShort} aria-hidden>
+          ↑
+        </span>
+      </Link>
 
       <button type="button" className={styles.newBtn} onClick={onNew}>
         <span className={styles.newFull}>+ 新会话</span>
