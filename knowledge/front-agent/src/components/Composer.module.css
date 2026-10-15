@@ -1,9 +1,11 @@
 .wrap {
+  flex-shrink: 0;
   padding: 8px 28px 22px;
   animation: slideUp 0.4s ease both;
 }
 
 .shell {
+  flex-shrink: 0;
   max-width: 880px;
   margin: 0 auto;
   background: var(--surface);
