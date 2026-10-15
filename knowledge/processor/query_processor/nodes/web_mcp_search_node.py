@@ -1,13 +1,28 @@
 import asyncio
+import concurrent.futures
 import json
+import os
 from json import JSONDecodeError
-from typing import Tuple, List, Dict, Any, Union
+from typing import Tuple, List, Dict, Any, Union, Coroutine, TypeVar
 
 from agents.mcp import MCPServerStreamableHttp
 
 from knowledge.processor.query_processor.base import BaseNode
 from knowledge.processor.query_processor.exceptions import StateFieldError
 from knowledge.processor.query_processor.state import QueryGraphState
+
+T = TypeVar("T")
+
+
+def _run_coro(coro: Coroutine[Any, Any, T]) -> T:
+    """在同步节点中跑协程；Agent 轨已有事件循环时不能再用 asyncio.run。"""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 class WebMcpSearchNode(BaseNode):
@@ -19,11 +34,15 @@ class WebMcpSearchNode(BaseNode):
         rewritten_query, item_names = self._validate_state(state)
 
         # 2、定义并且执行 mcp 的调用
-        # 调用方调用一个async修饰的方法，有且只有两种方式：方式一：继续添加await  方式二：将这个方法放到异步环境中(调用方是同步)
-        web_search_results = asyncio.run(self._execute_mcp_server(rewritten_query))
+        try:
+            web_search_results = _run_coro(self._execute_mcp_server(rewritten_query))
+        except Exception as e:
+            self.logger.error("MCP 联网搜索失败: %s", e, exc_info=True)
+            return state
 
         # 3、判断
         if not web_search_results:
+            self.logger.warning("MCP 联网搜索无结果 query=%s", rewritten_query)
             return state
 
         # 4. 返回
@@ -31,17 +50,17 @@ class WebMcpSearchNode(BaseNode):
 
     def _validate_state(self, state: QueryGraphState) -> Tuple[str, List[str]]:
 
-        # 1. 用户的问题（LLM重写后的）
-        rewritten_query = state.get('rewritten_query')
+        # 1. 用户的问题（LLM重写后的；闲聊可回退到原问）
+        rewritten_query = state.get('rewritten_query') or state.get('original_query')
 
-        # 2. 获取商品名列表
-        item_names = state.get('item_names')
+        # 2. 获取商品名列表（闲聊可为空）
+        item_names = state.get('item_names') or []
 
-        # 3. 校验
+        # 3. 校验：联网搜索只强制需要查询文本
         if not rewritten_query or not isinstance(rewritten_query, str):
             raise StateFieldError(node_name=self.name, field_name='rewritten_query', expected_type=str)
 
-        if not item_names or not isinstance(item_names, list):
+        if not isinstance(item_names, list):
             raise StateFieldError(node_name=self.name, field_name='item_names', expected_type=list)
 
         return rewritten_query, item_names
@@ -57,12 +76,18 @@ class WebMcpSearchNode(BaseNode):
 
         """
 
+        # 运行时读环境变量，避免配置单例在 load_dotenv 之前被冻结为空
+        mcp_url = (os.getenv("MCP_DASHSCOPE_BASE_URL") or self.config.mcp_dashscope_base_url or "").strip()
+        api_key = (os.getenv("OPENAI_API_KEY") or self.config.openai_api_key or "").strip()
+        if not mcp_url or not api_key:
+            raise RuntimeError("MCP 未配置：需要 MCP_DASHSCOPE_BASE_URL 与 OPENAI_API_KEY")
+
         # 1. 定义MCP客户端(StreamableHttp方式)
         async with MCPServerStreamableHttp(
                 name="联网搜索",  # MCP客户端名字，自定义
                 params={  # 提供MCP服务的第三方平台的api_key和base_url
-                    "url": self.config.mcp_dashscope_base_url,
-                    "headers": {"Authorization": f"Bearer {self.config.openai_api_key}"},
+                    "url": mcp_url,
+                    "headers": {"Authorization": f"Bearer {api_key}"},
                     "timeout": 60,  # 超时时间
                 },
                 cache_tools_list=True,  # 缓存MCP服务下的工具列表的,加速
@@ -73,6 +98,9 @@ class WebMcpSearchNode(BaseNode):
                                                            arguments={"query": rewritten_query, "count": 3})
             # 3. 解析数据
             # 3.1 获取文本内容块对象
+            if not web_search_result.content:
+                return []
+
             text_content = web_search_result.content[0]
             if not text_content:
                 return []
@@ -85,24 +113,42 @@ class WebMcpSearchNode(BaseNode):
             # 3.3 反序列化
             try:
                 text_content_obj: Dict[str, Any] = json.loads(text_content_text)
-
-                # 3.4 获取真正的网页内容
-                pages = text_content_obj.get('pages', [])
-                if not pages:
-                    return []
-
-                # 3.5 遍历
-                web_search_results = []
-                for page in pages:
-                    web_search_results.append({
-                        "snippet": page.get('snippet', '').strip(),
-                        "title": page.get('title', '').strip(),
-                        "url": page.get('url', '').strip(),
-                    })
-                return web_search_results
+                return self._parse_mcp_payload(text_content_obj)
             except JSONDecodeError as e:
                 self.logger.error(f"web_search检索失败 失败信息：{e.msg} 失败的内容:{e.doc} 失败的位置：{e.pos}")
                 return []
+
+    def _parse_mcp_payload(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """解析 bailian_web_search 返回：pages + tools（天气等结构化结果）。"""
+        web_search_results: List[Dict[str, Any]] = []
+
+        # 结构化工具结果优先（如 weather）
+        for tool in payload.get("tools") or []:
+            if not isinstance(tool, dict):
+                continue
+            result_text = str(tool.get("result") or "").strip()
+            if not result_text:
+                continue
+            tool_type = str(tool.get("type") or "tool").strip() or "tool"
+            web_search_results.append({
+                "snippet": result_text,
+                "title": f"结构化结果 · {tool_type}",
+                "url": "",
+            })
+
+        for page in payload.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+            snippet = (page.get("snippet") or "").strip()
+            if not snippet:
+                continue
+            web_search_results.append({
+                "snippet": snippet,
+                "title": (page.get("title") or "").strip(),
+                "url": (page.get("url") or "").strip(),
+            })
+
+        return web_search_results
 
 
 if __name__ == "__main__":
@@ -110,9 +156,10 @@ if __name__ == "__main__":
     web_search_node = WebMcpSearchNode()
 
     mock_state = {
-        "rewritten_query": "RS-12 数字万用表如何测量直流电压？",
-        "item_names": ["RS-12 数字万用表"],
+        "rewritten_query": "今天天气咋样",
+        "item_names": [],
+        "original_query": "今天天气咋样",
     }
 
     result = web_search_node.process(mock_state)
-    # print("搜索结果：", result.get('web_search_docs') if isinstance(result, dict) else result)
+    print(result)

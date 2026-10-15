@@ -40,10 +40,12 @@ class HybridVectorSearchNode(BaseNode):
             self.logger.error(f"用户问题{rewritten_query}嵌入失败 error: {e}")
             return state
 
-
-            # 4.2 创建混合检索请求 expr: 对检索的返回做过滤
+            # 4.2 创建混合检索请求；有确认商品才过滤，品类/泛问则全库检索
         try:
-            expr, expr_params = _item_names_filter(item_names)
+            if item_names:
+                expr, expr_params = _item_names_filter(item_names)
+            else:
+                expr, expr_params = None, None
             hybrid_search_req = create_hybrid_search_requests(dense_vector=embedding_query_vector['dense'][0],
                                           sparse_vector=embedding_query_vector['sparse'][0],
                                           expr=expr,
@@ -73,15 +75,15 @@ class HybridVectorSearchNode(BaseNode):
     def _validate_state(self, state: QueryGraphState) -> Tuple[str, List[str]]:
 
         # 1、用户的问题（LLM重写后的）
-        rewritten_query = state.get('rewritten_query')
+        rewritten_query = state.get('rewritten_query') or state.get('original_query')
 
-        # 2、获取商品列表
-        item_names = state.get('item_names')
+        # 2、获取商品列表（品类泛问可为空 → 全库检索）
+        item_names = state.get('item_names') or []
 
         if not rewritten_query or not isinstance(rewritten_query, str):
             raise StateFieldError(node_name=self.name, field_name='rewritten_query', expected_type=str)
 
-        if not item_names or not isinstance(item_names, list):
+        if not isinstance(item_names, list):
             raise StateFieldError(node_name=self.name, field_name='item_names', expected_type=list)
 
         return rewritten_query, item_names

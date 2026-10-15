@@ -51,9 +51,12 @@ class HydeVectorSearchNode(BaseNode):
             self.logger.error(f"假设性文档{hy_document}嵌入失败 error: {e}")
             return state
 
-        # 7、向量检索
+        # 7、向量检索；有确认商品才过滤，否则全库
         try:
-            expr, expr_params = _item_names_filter(item_names)
+            if item_names:
+                expr, expr_params = _item_names_filter(item_names)
+            else:
+                expr, expr_params = None, None
 
             hybrid_search_req = create_hybrid_search_requests(dense_vector=embed_hy_vector['dense'][0],
                                           sparse_vector=embed_hy_vector['sparse'][0],
@@ -83,16 +86,16 @@ class HydeVectorSearchNode(BaseNode):
 
     def _validate_state(self, state: QueryGraphState) -> Tuple[str, List[str]]:
         # 1. 用户的问题（LLM重写后的）
-        rewritten_query = state.get('rewritten_query')
+        rewritten_query = state.get('rewritten_query') or state.get('original_query')
 
-        # 2. 获取商品名列表
-        item_names = state.get('item_names')
+        # 2. 获取商品名列表（可为空）
+        item_names = state.get('item_names') or []
 
         # 3. 校验
         if not rewritten_query or not isinstance(rewritten_query, str):
             raise StateFieldError(node_name=self.name, field_name='rewritten_query', expected_type=str)
 
-        if not item_names or not isinstance(item_names, list):
+        if not isinstance(item_names, list):
             raise StateFieldError(node_name=self.name, field_name='item_names', expected_type=list)
 
         return rewritten_query, item_names

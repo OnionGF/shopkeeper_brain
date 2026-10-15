@@ -75,6 +75,7 @@ class _ItemNameExtractor:
         # 8、组装数据
         llm_result["item_names"] = parsed_result["item_names"]
         llm_result["rewritten_query"] =parsed_result["rewritten_query"] if parsed_result["rewritten_query"] else original_query
+        llm_result["query_intent"] = parsed_result.get("query_intent") or ""
 
         # 返回结果
         return llm_result
@@ -115,10 +116,16 @@ class _ItemNameExtractor:
             else:
                 rewritten_query = raw_rewritten_query.strip()
 
+            raw_intent = llm_content_obj.get("query_intent")
+            query_intent = raw_intent.strip().lower() if isinstance(raw_intent, str) else ""
+            if query_intent not in ("product", "chitchat"):
+                query_intent = ""
+
             # 返回
             return {
                 "item_names": item_names,
-                "rewritten_query": rewritten_query
+                "rewritten_query": rewritten_query,
+                "query_intent": query_intent,
             }
 
         except JSONDecodeError as e:
@@ -407,6 +414,7 @@ class ItemNameConfirmedNode(BaseNode):
         # 获取LLM结果
         item_names = llm_result.get("item_names")
         rewritten_query = llm_result.get("rewritten_query")
+        llm_intent = llm_result.get("query_intent") or ""
 
         # 4、仅当 LLM 抽到商品相关词才对齐；无关问题（天气/闲聊）不拿整句去向量库硬匹配
         if item_names:
@@ -415,7 +423,7 @@ class ItemNameConfirmedNode(BaseNode):
             confirmed, options = [], []
 
         # 5、决策
-        self._decide(confirmed, options, state, rewritten_query, item_names)
+        self._decide(confirmed, options, state, rewritten_query, item_names, llm_intent)
 
         # 6、更新state
         state['history'] = history_context
@@ -423,7 +431,15 @@ class ItemNameConfirmedNode(BaseNode):
         # 7、返回state
         return state
 
-    def _decide(self, confirmed: List[str], options: List[str], state: QueryGraphState, rewritten_query: str, item_names:List[str]):
+    def _decide(
+        self,
+        confirmed: List[str],
+        options: List[str],
+        state: QueryGraphState,
+        rewritten_query: str,
+        item_names: List[str],
+        llm_intent: str = "",
+    ):
         """
         根据confirmed、options来判断是继续检索还是返回用户提示信息
         Args:
@@ -432,6 +448,7 @@ class ItemNameConfirmedNode(BaseNode):
             state: 查询状态
             rewritten_query: 重写后的问题
             item_names: LLm提取到的商品名列表
+            llm_intent: LLM 判定的 product / chitchat
 
         Returns:
 
@@ -442,19 +459,54 @@ class ItemNameConfirmedNode(BaseNode):
             confirmed = [options[0]]
             options = []
 
+        query = rewritten_query or state.get('original_query', '') or ''
+
         if confirmed:
+            state['query_intent'] = 'product'
             state['item_names'] = confirmed
-            state['rewritten_query'] = rewritten_query or state.get('original_query', '')
+            state['rewritten_query'] = query
         elif options:
-            state['answer'] = (
-                f"我不确定您指的是哪款产品。"
-                f"您是在询问以下产品吗：{'、'.join(options)}？"
-            )
+            # 用抽词收窄候选，去掉无关品；能收窄则直接进知识库，避免「万用表」被无关候选打断
+            narrowed = self._narrow_options(options, item_names)
+            if len(narrowed) == 1:
+                state['query_intent'] = 'product'
+                state['item_names'] = narrowed
+                state['rewritten_query'] = query
+            elif narrowed and (llm_intent == 'product' or item_names):
+                state['query_intent'] = 'product'
+                state['item_names'] = narrowed
+                state['rewritten_query'] = query
+            else:
+                state['query_intent'] = 'clarify'
+                state['answer'] = (
+                    f"我不确定您指的是哪款产品。"
+                    f"您是在询问以下产品吗：{'、'.join(options)}？"
+                )
+        elif llm_intent == 'chitchat' and not item_names:
+            # 标记闲聊供 Agent 走 MCP；DAG 图不短路，仍进知识库双路检索
+            state['query_intent'] = 'chitchat'
+            state['item_names'] = []
+            state['rewritten_query'] = query
         else:
-            state['answer'] = (
-                "抱歉，我无法将您的问题关联到知识库中的具体产品。"
-                "请提供产品名称或型号后再试，例如：RS-12 数字万用表如何测量电压。"
-            )
+            # 产品用法/品类问题（含抽不到具体型号）：走知识库全库向量检索
+            # 不对齐的品类词不做 item_name 精确过滤，避免「万用表」匹配不到「RS-12 数字万用表」
+            state['query_intent'] = 'product'
+            state['item_names'] = []
+            state['rewritten_query'] = query
+
+    @staticmethod
+    def _narrow_options(options: List[str], item_names: List[str]) -> List[str]:
+        """按抽取词过滤模糊候选；过滤为空则回退原列表。"""
+        if not options:
+            return []
+        if not item_names:
+            return list(options)
+        keys = [n.lower() for n in item_names if n]
+        narrowed = [
+            o for o in options
+            if any(k in o.lower() or o.lower() in k for k in keys)
+        ]
+        return narrowed or list(options)
 
 
 

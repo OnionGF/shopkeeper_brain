@@ -74,9 +74,16 @@ class RerankerNode(BaseNode):
 
             # 2.3 获取chunk中的chunk_id(一定有)
             chunk_id = chunk.get('chunk_id')
+            item_name = (chunk.get('item_name') or chunk.get('entity_name') or '').strip()
 
-            # 3. 格式化文档(格式化本地)
-            formated_local_doc = self._format_doc(content=content, chunk_id=chunk_id, title=title, source="local")
+            # 3. 格式化文档(格式化本地)，保留商品名供生成阶段点名
+            formated_local_doc = self._format_doc(
+                content=content,
+                chunk_id=chunk_id,
+                title=title,
+                source="local",
+                item_name=item_name,
+            )
 
             final_docs.append(formated_local_doc)
 
@@ -102,7 +109,15 @@ class RerankerNode(BaseNode):
         self.logger.info(f"获取Reranker阶段需要的搜索结果个数{len(final_docs)}")
         return final_docs
 
-    def _format_doc(self, content: str, chunk_id: int = None, title: str = "", url: str = "", source: str = ""):
+    def _format_doc(
+        self,
+        content: str,
+        chunk_id: int = None,
+        title: str = "",
+        url: str = "",
+        source: str = "",
+        item_name: str = "",
+    ):
         """
         格式化本地以及远程检索到的文档
         Args:
@@ -111,6 +126,7 @@ class RerankerNode(BaseNode):
             title:
             source:
             url:
+            item_name: 知识库商品名
 
         Returns:
 
@@ -120,7 +136,8 @@ class RerankerNode(BaseNode):
             "chunk_id": chunk_id,
             "title": title,
             "url": url,
-            "source": source
+            "source": source,
+            "item_name": item_name,
         }
 
     def _refine_rank(self, user_query: str, rerank_outputs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

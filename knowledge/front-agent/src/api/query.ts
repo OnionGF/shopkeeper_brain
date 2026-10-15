@@ -9,11 +9,15 @@ export interface StreamHandlers {
   onError: (message: string) => void
 }
 
+export type QueryMode = 'dag' | 'agent'
+
 export async function submitQuery(
   query: string,
   sessionId: string,
+  mode: QueryMode = 'dag',
 ): Promise<{ task_id: string; session_id?: string }> {
-  const res = await fetch(`${API_BASE}/query`, {
+  const path = mode === 'agent' ? '/api/agent/query' : '/query'
+  const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

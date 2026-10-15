@@ -28,6 +28,8 @@ class QueryGraphState(TypedDict):
     rewritten_query: str  #重写答案
     history: list   # 历史对话
     is_stream: bool # 是否流式输出
+    # product | clarify | chitchat；闲聊走 MCP/LLM，不进知识库拒答
+    query_intent: str
 
 
 # ==================== 默认状态 ====================
@@ -48,6 +50,7 @@ DEFAULT_STATE: QueryGraphState = {
     "rewritten_query": "",          # 重写查询
     "history": [],                  # 历史对话
     "is_stream": False,             # 是否流式输出 (默认设为 False)
+    "query_intent": "",             # 路由意图
 }
 
 def create_default_state(**overrides) -> QueryGraphState:

@@ -6,6 +6,12 @@ import asyncio
 import os
 from typing import Union
 
+from dotenv import load_dotenv
+
+from knowledge.core.paths import KNOWLEDGE_ROOT, get_front_agent_dist_dir
+
+load_dotenv(os.path.join(KNOWLEDGE_ROOT, ".env"))
+
 import uvicorn
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +19,6 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from knowledge.core.deps import get_query_service
-from knowledge.core.paths import get_front_agent_dist_dir
 from knowledge.schema.query_schema import QueryRequest, QueryResponse, StreamSubmitResponse
 from knowledge.service.query_service import QueryService
 from knowledge.utils.sse_util import create_sse_queue, sse_generator
@@ -58,6 +63,48 @@ def register_query_routes(app: FastAPI) -> None:
             message="查询请求已经处理完了",
             session_id=session_id,
             answer=answer,
+        )
+
+    # 注意：不要用 /agent/query —— 会与静态挂载 /agent 冲突导致 POST 405
+    @app.post("/api/agent/query")
+    async def agent_query(
+        request: QueryRequest,
+        background_tasks: BackgroundTasks,
+        service: QueryService = Depends(get_query_service),
+    ) -> Union[StreamSubmitResponse, QueryResponse]:
+        """Agent 学习轨：openai-agents 编排，能力层仍复用查询节点。"""
+        session_id = request.session_id or service.generate_session_id()
+        task_id = service.generate_task_id()
+
+        if request.is_stream:
+            create_sse_queue(task_id=task_id)
+            background_tasks.add_task(
+                service.run_agent_query,
+                session_id=session_id,
+                task_id=task_id,
+                query=request.query,
+                is_stream=request.is_stream,
+            )
+            return StreamSubmitResponse(
+                message="Agent 查询请求已经提交",
+                session_id=session_id,
+                task_id=task_id,
+            )
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            service.run_agent_query,
+            session_id,
+            task_id,
+            request.query,
+            request.is_stream,
+        )
+        answer = service.get_task_result(task_id)
+        return QueryResponse(
+            message="Agent 查询请求已经处理完了",
+            session_id=session_id,
+            answer=answer or "",
         )
 
     @app.get("/stream/{task_id}")

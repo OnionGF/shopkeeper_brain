@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { clearHistory, fetchHistory, openStream, submitQuery } from '../api/query'
+import { clearHistory, fetchHistory, openStream, submitQuery, type QueryMode } from '../api/query'
+import { loadQueryMode, saveQueryMode } from '../lib/queryMode'
 import { mapNodeToTool } from '../lib/toolMap'
 import {
   createSession,
@@ -58,8 +59,16 @@ export function useChatSession() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sending, setSending] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [queryMode, setQueryModeState] = useState<QueryMode>(() => loadQueryMode())
   const esRef = useRef<EventSource | null>(null)
   const rawAnswerRef = useRef('')
+  const queryModeRef = useRef(queryMode)
+  queryModeRef.current = queryMode
+
+  const setQueryMode = useCallback((mode: QueryMode) => {
+    setQueryModeState(mode)
+    saveQueryMode(mode)
+  }, [])
 
   const refreshSessions = useCallback(() => {
     setSessions(loadSessions())
@@ -161,7 +170,7 @@ export function useChatSession() {
       refreshSessions()
 
       try {
-        const data = await submitQuery(query, sessionId)
+        const data = await submitQuery(query, sessionId, queryModeRef.current)
         const taskId = data.task_id
         if (!taskId) throw new Error('未返回 task_id')
 
@@ -242,6 +251,8 @@ export function useChatSession() {
     messages,
     sending,
     loadingHistory,
+    queryMode,
+    setQueryMode,
     send,
     switchSession,
     newSession,

@@ -9,6 +9,13 @@ Agent Brain 统一 API 入口：导入 + 查询同进程分流。
 
 import os
 
+from dotenv import load_dotenv
+
+from knowledge.core.paths import KNOWLEDGE_ROOT
+
+# 必须在导入业务模块 / 配置单例之前加载，否则 MCP/Mongo/OpenAI 配置为空
+load_dotenv(os.path.join(KNOWLEDGE_ROOT, ".env"))
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

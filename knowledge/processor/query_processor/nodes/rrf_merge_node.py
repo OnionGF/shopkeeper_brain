@@ -29,7 +29,7 @@ class RrfMergeNode(BaseNode):
         merged_rrf = [rrf_res for rrf_res, _ in merged_rrf_results]
 
         # 5、更新state
-        state['rrf_chunks '] = merged_rrf
+        state['rrf_chunks'] = merged_rrf
 
         return state
 

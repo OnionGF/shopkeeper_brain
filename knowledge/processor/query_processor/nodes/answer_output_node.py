@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 
 from knowledge.processor.query_processor.base import BaseNode
 from knowledge.processor.query_processor.state import QueryGraphState
-from knowledge.prompts.query_prompt import ANSWER_PROMPT
+from knowledge.prompts.query_prompt import ANSWER_PROMPT, CHITCHAT_ANSWER_PROMPT
 from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.mongo_history_util import save_chat_message
 from knowledge.utils.sse_util import push_sse_event, SSEEvent
@@ -68,25 +68,36 @@ class AnswerOutputNode(BaseNode):
     def _build_prompt(self, state: QueryGraphState) -> str:
 
         max_context_chars = self.config.max_context_chars
-        # 1. 获取用户原始问题
-        user_query = state.get('rewritten_query')
+        # 1. 获取用户问题（闲聊可回退原问）
+        user_query = state.get('rewritten_query') or state.get('original_query') or ""
 
-        # 2. 获取商品名列表
-        item_names = state.get('item_names') or []
+        # 2. 获取商品名列表（确认节点 + 检索命中切片里的 item_name）
+        item_names = list(state.get('item_names') or [])
+        retrieval_context = state.get('reranked_docs') or []
+        for doc in retrieval_context:
+            name = (doc.get('item_name') or '').strip()
+            if name and name not in item_names:
+                item_names.append(name)
 
         # 3. 构建检索的上下文
-        retrieval_context = state.get('reranked_docs') or []
         formatted_context, usage_chars = self._format_retrieval_context(retrieval_context, max_context_chars)
 
         # 4. 构建历史上下文
         chat_history_context = state.get('history') or []  # 从内存中获取历史对话（获取不到）
         formatted_history = self._format_chat_history(chat_history_context, usage_chars)
 
-        # 5. 格式化提示词模版
+        # 5. 闲聊走专用提示：允许 MCP 结果 + 外部 LLM 常识兜底
+        if state.get('query_intent') == 'chitchat':
+            return CHITCHAT_ANSWER_PROMPT.format(
+                context=formatted_context or "暂无联网检索结果",
+                history=formatted_history or "暂无历史上下文",
+                question=user_query,
+            )
+
         return ANSWER_PROMPT.format(
             context=formatted_context or "暂无检索到上下文",
             history=formatted_history or "暂无历史上下文",
-            item_names=",".join(item_names),
+            item_names="、".join(item_names) if item_names else "（未锁定具体型号，请根据参考内容中的商品作答）",
             question=user_query
         )
 
@@ -119,11 +130,14 @@ class AnswerOutputNode(BaseNode):
             # 1.3 获取元数据
             metadata_content = [f"[文档:{index}]"]
 
-            # 1.4 定义其它元数据
-            for meta_field, template in [("chunk_id", "[chunk_id={}]"),
-                                         ("title", "[title={}]"),
-                                         ("source", "[source={}]"),
-                                         ("url", "[url={}]")]:
+            # 1.4 定义其它元数据（含 item_name，避免正文未写型号时模型泛化成「万用表」）
+            for meta_field, template in [
+                ("item_name", "[商品={}]"),
+                ("chunk_id", "[chunk_id={}]"),
+                ("title", "[title={}]"),
+                ("source", "[source={}]"),
+                ("url", "[url={}]"),
+            ]:
                 # a. 获取各个元数据字段的值
                 filed_value = str(context.get(meta_field, "")).strip()
 

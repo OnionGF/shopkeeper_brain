@@ -59,6 +59,17 @@ class QueryService:
             logger.error(f"运行查询流程出现异常:{str(e)}")
             update_task_status(task_id=task_id, status_name=TASK_STATUS_FAILED)
 
+    def run_agent_query(self, session_id: str, task_id: str, query: str, is_stream: bool):
+        """openai-agents 编排轨：模型决定知识库 vs 联网，再调能力层 tools。"""
+        from knowledge.agent import run_agent_query
+
+        run_agent_query(
+            session_id=session_id,
+            task_id=task_id,
+            query=query,
+            is_stream=is_stream,
+        )
+
     def get_task_result(self, task_id: str):
         answer = get_task_result(task_id=task_id, key="answer")
         return answer

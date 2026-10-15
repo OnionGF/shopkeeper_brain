@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // 统一入口 knowledge.api.main → :8000
       '/query': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/api/agent/query': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/stream': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/history': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/status': { target: 'http://127.0.0.1:8000', changeOrigin: true },

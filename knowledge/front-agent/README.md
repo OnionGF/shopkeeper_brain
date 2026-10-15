@@ -17,10 +17,10 @@ npm run dev
 
 打开 http://127.0.0.1:5173 ：
 
-- `#/` 问答
+- `#/` 问答（输入区可切换 **DAG** / **Agent** 轨）
 - `#/import` 知识库导入（侧栏入口）
 
-Vite 把 `/query`、`/stream`、`/history`、`/upload`、`/status` 代理到 `http://127.0.0.1:8000`。
+Vite 把 `/query`、`/api/agent/query`、`/stream`、`/history`、`/upload`、`/status` 代理到 `http://127.0.0.1:8000`。
 
 ## 生产构建
 

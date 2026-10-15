@@ -11,6 +11,8 @@ export function ChatPage() {
     sessionId,
     messages,
     sending,
+    queryMode,
+    setQueryMode,
     send,
     switchSession,
     newSession,
@@ -40,6 +42,8 @@ export function ChatPage() {
         <Composer
           disabled={sending}
           seed={seed}
+          queryMode={queryMode}
+          onQueryModeChange={setQueryMode}
           onSend={(text) => {
             setSeed('')
             void send(text)
