@@ -118,7 +118,7 @@ class _ItemNameExtractor:
 
             raw_intent = llm_content_obj.get("query_intent")
             query_intent = raw_intent.strip().lower() if isinstance(raw_intent, str) else ""
-            if query_intent not in ("product", "chitchat"):
+            if query_intent not in ("product", "chitchat", "news"):
                 query_intent = ""
 
             # 返回
@@ -448,7 +448,7 @@ class ItemNameConfirmedNode(BaseNode):
             state: 查询状态
             rewritten_query: 重写后的问题
             item_names: LLm提取到的商品名列表
-            llm_intent: LLM 判定的 product / chitchat
+            llm_intent: LLM 判定的 product / chitchat / news
 
         Returns:
 
@@ -482,6 +482,11 @@ class ItemNameConfirmedNode(BaseNode):
                     f"我不确定您指的是哪款产品。"
                     f"您是在询问以下产品吗：{'、'.join(options)}？"
                 )
+        elif llm_intent == 'news' and not item_names:
+            # 新闻整理轨：Agent 交给 NewsAgent 联网汇总
+            state['query_intent'] = 'news'
+            state['item_names'] = []
+            state['rewritten_query'] = query
         elif llm_intent == 'chitchat' and not item_names:
             # 标记闲聊供 Agent 走 MCP；DAG 图不短路，仍进知识库双路检索
             state['query_intent'] = 'chitchat'

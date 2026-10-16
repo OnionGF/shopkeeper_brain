@@ -28,7 +28,7 @@ class QueryGraphState(TypedDict):
     rewritten_query: str  #重写答案
     history: list   # 历史对话
     is_stream: bool # 是否流式输出
-    # product | clarify | chitchat；闲聊走 MCP/LLM，不进知识库拒答
+    # product | clarify | chitchat | news；闲聊/新闻走 MCP，不进知识库拒答
     query_intent: str
 
 

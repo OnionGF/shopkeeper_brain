@@ -4,10 +4,10 @@
 
 目录：
   config.py / errors.py
-  context/          会话状态
+  context/          会话状态 + next_hint
   runtime/          模型 + runner
-  orchestration/    instructions + Agent 工厂
-  tools/            KB / Web / Answer tools
+  orchestration/    Router+专责 Agent、decide_next、instructions
+  tools/            按 Router/KB/Web/News 分组的能力门面
 """
 
 from knowledge.agent.runtime.runner import run_agent_query

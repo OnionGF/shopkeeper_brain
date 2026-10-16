@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 
 from knowledge.processor.query_processor.base import BaseNode
 from knowledge.processor.query_processor.state import QueryGraphState
-from knowledge.prompts.query_prompt import ANSWER_PROMPT, CHITCHAT_ANSWER_PROMPT
+from knowledge.prompts.query_prompt import ANSWER_PROMPT, CHITCHAT_ANSWER_PROMPT, NEWS_ANSWER_PROMPT
 from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.mongo_history_util import save_chat_message
 from knowledge.utils.sse_util import push_sse_event, SSEEvent
@@ -86,9 +86,16 @@ class AnswerOutputNode(BaseNode):
         chat_history_context = state.get('history') or []  # 从内存中获取历史对话（获取不到）
         formatted_history = self._format_chat_history(chat_history_context, usage_chars)
 
-        # 5. 闲聊走专用提示：允许 MCP 结果 + 外部 LLM 常识兜底
-        if state.get('query_intent') == 'chitchat':
+        # 5. 闲聊 / 新闻整理走专用提示：允许 MCP 结果
+        intent = state.get('query_intent') or ""
+        if intent == 'chitchat':
             return CHITCHAT_ANSWER_PROMPT.format(
+                context=formatted_context or "暂无联网检索结果",
+                history=formatted_history or "暂无历史上下文",
+                question=user_query,
+            )
+        if intent == 'news':
+            return NEWS_ANSWER_PROMPT.format(
                 context=formatted_context or "暂无联网检索结果",
                 history=formatted_history or "暂无历史上下文",
                 question=user_query,

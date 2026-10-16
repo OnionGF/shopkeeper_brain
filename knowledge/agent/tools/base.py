@@ -1,4 +1,4 @@
-"""Tool 公共：节点单例懒加载 + 安全执行包装。"""
+"""Tool 公共：节点单例懒加载 + 统一 JSON 契约 + 策略门禁。"""
 
 from __future__ import annotations
 
@@ -40,18 +40,74 @@ def get_node(name: str) -> BaseNode:
     return _nodes[name]
 
 
-def run_node(ctx: QueryAgentContext, node: BaseNode) -> str:
-    """执行节点并合并 state，返回给 Agent 的短摘要 JSON（异常不打穿循环）。"""
+def tool_result(
+    *,
+    ok: bool,
+    tool: str,
+    ctx: QueryAgentContext,
+    data: Optional[Dict[str, Any]] = None,
+    error: Optional[str] = None,
+) -> str:
+    """统一 Tool 返回：ok / tool / data / hint / next / allowed / reason / error。"""
+    decision = ctx.decision()
+    payload: Dict[str, Any] = {
+        "ok": ok,
+        "tool": tool,
+        "data": data if data is not None else {},
+        "hint": decision.hint,
+        "next": decision.action,
+        "allowed": list(decision.allowed),
+        "reason": decision.reason,
+        "error": error,
+    }
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def guard_tool(ctx: QueryAgentContext, tool: str) -> Optional[str]:
+    """策略门禁：不在 allowed 内则拒绝执行节点，返回错误 JSON。"""
+    decision = ctx.decision()
+    if decision.allows(tool):
+        return None
+    return tool_result(
+        ok=False,
+        tool=tool,
+        ctx=ctx,
+        data={"blocked": True, "attempted": tool, **ctx.summary()},
+        error=f"policy blocked '{tool}'; next={decision.action}; allowed={list(decision.allowed)}",
+    )
+
+
+def execute_node(ctx: QueryAgentContext, node: BaseNode) -> None:
+    """执行节点并 merge（无门禁、不记 tool、不组 JSON）。供复合 tool 内部使用。"""
+    result = node(ctx.state)
+    ctx.merge(result)
+
+
+def run_node(ctx: QueryAgentContext, node: BaseNode, *, tool: str) -> str:
+    """策略门禁 → 执行节点 → 记录调用 → 返回统一契约 JSON。"""
+    blocked = guard_tool(ctx, tool)
+    if blocked is not None:
+        logger.info("policy blocked tool=%s decision=%s", tool, ctx.decision().as_dict())
+        return blocked
+
     try:
-        result = node(ctx.state)
-        ctx.merge(result)
-        payload: dict[str, Any] = {"ok": True, "node": node.name, **ctx.summary()}
-        return json.dumps(payload, ensure_ascii=False)
+        execute_node(ctx, node)
+        ctx.record_tool(tool)
+        return tool_result(
+            ok=True,
+            tool=tool,
+            ctx=ctx,
+            data={"node": node.name, **ctx.summary()},
+        )
     except Exception as e:
         logger.exception("tool node %s failed", node.name)
-        return json.dumps(
-            {"ok": False, "node": node.name, "error": str(e), **ctx.summary()},
-            ensure_ascii=False,
+        ctx.record_tool(tool)
+        return tool_result(
+            ok=False,
+            tool=tool,
+            ctx=ctx,
+            data={"node": node.name, **ctx.summary()},
+            error=str(e),
         )
 
 

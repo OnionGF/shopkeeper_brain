@@ -27,9 +27,9 @@ function statusLabel(status: ImportTask['status']): string {
 }
 
 function barColor(percent: number, status: ImportTask['status']): string {
-  if (status === 'completed' || percent >= 100) return 'linear-gradient(90deg, #10b981, #34d399)'
+  if (status === 'completed' || percent >= 100) return 'linear-gradient(90deg, #10b981, #059669)'
   if (percent < 10) return 'linear-gradient(90deg, #f59e0b, #fbbf24)'
-  return 'linear-gradient(90deg, #4d8dff, #2fd4c8)'
+  return 'linear-gradient(90deg, #1f6feb, #148a78)'
 }
 
 export function FileTaskCard({ task }: Props) {
