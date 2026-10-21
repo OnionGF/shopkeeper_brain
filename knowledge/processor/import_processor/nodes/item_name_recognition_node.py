@@ -16,9 +16,9 @@ from knowledge.utils.client.storage_clients import StorageClients
 
 
 class ItemNameRecognitionNode(BaseNode):
+    name = "item_name_recognition_node"
 
     def process(self, state: ImportGraphState) -> ImportGraphState:
-        name="item_name_recognition_node"
         """
         主要职责    
             1、负责利用LLM提取商品的具体型号（名）
@@ -49,7 +49,7 @@ class ItemNameRecognitionNode(BaseNode):
 
         return state
 
-    def _validate_state(self, state) -> Tuple[str, List, int, int]:
+    def _validate_state(self, state) -> Tuple[str, List, int]:
         """
 
         Args:
@@ -70,7 +70,7 @@ class ItemNameRecognitionNode(BaseNode):
 
         # 4、判断chunks
         if not chunks or not isinstance(chunks, list):
-            raise StateFieldError(node_name=self.name, field_name="chunks", expected_type=str)
+            raise StateFieldError(node_name=self.name, field_name="chunks", expected_type=list)
 
         # 5、获取item_name_chunk_k(3) 以及 item_name_chunk_size（2500）
         item_name_chunk_k = self.config.item_name_chunk_k
@@ -132,7 +132,8 @@ class ItemNameRecognitionNode(BaseNode):
                 HumanMessage(content=user_prompt),
             ])
             # 4、 获取AI 恢复的具体内容
-            llm_result = llm_response.content.strip("")
+            # 先剥首尾空白，再剥模型偶尔加上的成对引号（原先 strip("") 传空串，等于没剥）
+            llm_result = llm_response.content.strip().strip('"“”').strip()
             if not llm_result or llm_result == "UNKNOWN":
                 self.logger.error(f"LLM提取商品名失败，降级使用文件标题{file_title}作为商品名")
                 return file_title
@@ -217,6 +218,7 @@ class ItemNameRecognitionNode(BaseNode):
         # 使用Milvus的流程： 1、创建集合（约束、索引） 2、插入数据 3、查询/检索
 
         # 4、创建milvus集合(幂等性校验)
+        insert_result: Optional[Dict[str, Any]] = None
         try:
             item_name_collection_name = self.config.item_name_collection
             if not milvus_client.has_collection(item_name_collection_name):
@@ -232,7 +234,10 @@ class ItemNameRecognitionNode(BaseNode):
             # 6、插入数据
             insert_result = milvus_client.insert(collection_name=item_name_collection_name, data=[item_name_data_row])
         except Exception as e:
-            self.logger.error(f"商品名{item_name}插入失败{str(e)}")
+            # 商品名入库失败不阻断主流程（检索主力是 chunks 集合），但必须 return，
+            # 否则下面读未赋值的 insert_result 会抛 UnboundLocalError
+            self.logger.error(f"商品名{item_name}插入失败{str(e)}", exc_info=True)
+            return
 
         self.logger.info(f"插入的结果：{insert_result}, 主键值：{insert_result.get('ids')}")
 
