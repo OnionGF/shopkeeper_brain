@@ -63,6 +63,7 @@ class DocumentSplitNode(BaseNode):
 
     def _split_by_headings(self, md_content: str, file_title: str):
         """
+        切分关键函数！！！
         根据标题来切分（一到六级都有可能）
         Args:
             md_content: 切分的md
@@ -100,7 +101,7 @@ class DocumentSplitNode(BaseNode):
             if current_title or body:
                 parent_title = ""
                 for i in range(current_level-1, 0, -1):
-                    if hierarchy[i]: # 找副标题的时候，排除某一个位置的控制
+                    if hierarchy[i]: # 找父标题的时候，排除某一个位置的空值
                         parent_title = hierarchy[i]
                         break
 

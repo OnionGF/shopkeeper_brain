@@ -1,4 +1,5 @@
 import re, base64, logging
+import time
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -409,8 +410,27 @@ class _VLMSummarizer:
             self.logger.error(f"图片摘要生成失败 {img_info.path}: {e}")
             return "暂无图片描述"
 
-    def _enforce_rate_limit(self, request_timestamps: Deque[float], requests_per_minute: int):
-        pass
+    def _enforce_rate_limit(
+            self, timestamps: Deque[float],
+            max_requests: int,
+            window: int = 60,
+    ):
+        now = time.time()
+        while timestamps and now - timestamps[0] >= window:
+            timestamps.popleft()
+
+        if len(timestamps) >= max_requests:
+            sleep_dur = window - (now - timestamps[0])
+            if sleep_dur > 0:
+                self.logger.info(
+                    f"达到速率限制，暂停 {sleep_dur:.2f} 秒..."
+                )
+                time.sleep(sleep_dur)
+            now = time.time()
+            while timestamps and now - timestamps[0] >= window:
+                timestamps.popleft()
+
+        timestamps.append(now)
 
 class _ImageUploader:
     """
