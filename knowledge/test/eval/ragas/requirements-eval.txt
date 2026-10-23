@@ -1,0 +1,4 @@
+# 仅评测环境使用；在 knowledge/.venv 中安装：
+#   pip install -r test/eval/ragas/requirements-eval.txt
+ragas==0.2.15
+datasets>=2.19.0

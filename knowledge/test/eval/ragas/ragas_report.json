@@ -1,0 +1,43 @@
+{
+  "dataset": "knowledge/test/eval/ragas/sample_eval.jsonl",
+  "stage": "reranked",
+  "top_k": 5,
+  "judge_model": "qwen-flash",
+  "num_eval_rows": 3,
+  "scores": {
+    "raw": "{'context_precision': 0.5278, 'context_recall': 0.5000}"
+  },
+  "per_sample_meta": [
+    {
+      "id": "demo_01",
+      "question": "RS-12数字万用表如何测量电压",
+      "item_names": [
+        "RS-12 数字万用表"
+      ],
+      "rewritten_query": "RS-12数字万用表如何测量电压",
+      "num_contexts": 3,
+      "short_circuited": false,
+      "answer_preview": "使用RS-12数字万用表测量电压的步骤如下：\n\n1. **确定电压类型**：确认要测量的是直流电压（DCV）还是交流电压（ACV）。例如，电池为直流电压，家用插座为交流电压。\n\n2. **连接表笔**：\n   - 将黑色表笔插入万用表的COM插孔。\n   - 将红色表笔插入标有V或VΩmA的插孔（用于电压、电阻和小电流测量）。\n\n3. **打开电源**：开启RS-12数字万用表的电源开关。\n\n4."
+    },
+    {
+      "id": "demo_02",
+      "question": "RS PRO RS-12 数字万用表怎么测电阻",
+      "item_names": [
+        "RS-12 数字万用表"
+      ],
+      "rewritten_query": "如何使用RS PRO RS-12 数字万用表测量电阻？",
+      "num_contexts": 3,
+      "short_circuited": false,
+      "answer_preview": "使用RS PRO RS-12 数字万用表测量电阻的步骤如下：\n\n1. **断电操作**：确保被测电路已断电，避免带电测量导致万用表损坏或读数错误。\n2. **插表笔**：将黑表笔插入万用表的COM（公共）接口，红表笔插入V/Ω（电压/电阻）接口。\n3. **选择档位**：将功能选择旋钮拨至欧姆档（Ω），根据预估的电阻值选择合适的量程。例如，若预估电阻在10kΩ左右，可选择20kΩ量程；若不确定阻值"
+    },
+    {
+      "id": "demo_03",
+      "question": "万用表使用时最高海拔是多少",
+      "item_names": [],
+      "rewritten_query": "",
+      "num_contexts": 0,
+      "short_circuited": true,
+      "answer_preview": "我不确定您指的是哪款产品。您是在询问以下产品吗：RS-12 数字万用表、华为擎云 W525 计算机、HAK 180 烫金机？"
+    }
+  ]
+}
